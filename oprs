@@ -9,7 +9,7 @@ from numba import jit
 warnings.simplefilter('ignore')
 
 
-# sr need to sort by ['secID','timeTag'
+# sr need to sort by ['secID','timeTag']
 class EleOperators(object):
     OPERATOR_LIST = ['max', 'min', 'std', 'mean', 'sum', 'corr']
     PLUS_NUM = 1e-8
