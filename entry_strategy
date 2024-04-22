@@ -1,0 +1,149 @@
+import numpy as np
+
+from decimal import Decimal, ROUND_UP, ROUND_DOWN
+
+
+class EntryStrategy(object):
+    def _init_(self, params, entry_cost: float, tick_size: float, bp1: float, sp1: float, midpx: float,
+               buy_score: float, sell_score: float):
+        self.params = params
+        self.entry_cost = entry_cost
+        self.entry_thre = params.entry_thre
+        self.tick_size = tick_size
+        self.bp1 = bp1
+        self.sp1 = sp1
+        self.midpx = midpx
+        self.buy_score = buy_score
+        self.sell_score = sell_score
+        self.entry_buffer = self.entry_cost + self.entry_thre * self.tick_size / self.midpx * 1e4
+
+    def org_entry_strategy(self):
+        if self.buy_score > 0:
+            # if the score >= entry buffer, limit price is min ofsp1 and
+            # the acceptable entry price (return at least is the entrybuffer
+            if self.buy_score >= self.entry_buffer:
+                # the profit buffer is the difference between the expectedreturn and the predicted return (excess returh)
+                profit_buffer = self.buy_score - self.entry_buffer
+                return min(self.sp1,
+                           float(Decimal(np.floor(
+                               self.midpx * (1 + profit_buffer) / 1e4 / self.tick_size) * self.tick_size).quantize(
+                               Decimal('.0000'), rounding=ROUND_DOWN))), 1
+            else:
+                return None, None
+        elif self.sell_score < 0:
+            # if the score <= entry buffer, limit price is max of bpl and
+            # the acceptable entry price (return at least is the eentry buffer)
+            if self.sell_score <= -self.entry_buffer:
+                # the profit buffer is the difference between the expeacted return and the predicted return (excess return)
+                profit_buffer = self.sell_score + self.entry_buffer
+                return max(self.bp1,
+                           float(Decimal(np.ceil(
+                               self.midpx * (1 + profit_buffer) / 1e4 / self.tick_size) * self.tick_size).quantize(
+                               Decimal('.0000'), rounding=ROUND_UP))), -1
+            else:
+                return None, None
+        else:
+            return None, None
+
+    def best_same_entry_strategy(self):
+        if self.buy_score > 0:
+            if self.buy_score >= self.entry_buffer:
+                return self.bp1, 1
+            else:
+                return None, None
+        elif self.sell_score < 0:
+            if self.sell_score <= -self.entry_buffer:
+                return self.sp1, -1
+            else:
+                return None, None
+        else:
+            return None, None
+
+    def best_oppo_entry_strategy(self):
+        if self.buy_score > 0:
+            if self.buy_score >= self.entry_buffer:
+                return self.sp1, 1
+            else:
+                return None, None
+        elif self.sell_score < 0:
+            if self.sell_score <= -self.entry_buffer:
+                return self.bp1, -1
+            else:
+                return None, None
+        else:
+            return None, None
+
+    def midpx_entry_strategy(self):
+        if self.buy_score > 0:
+            if self.buy_score >= self.entry_buffer:
+                return self.midpx, 1
+
+            else:
+                return None, None
+        elif self.sell_score < 0:
+            if self.sell_score <= -self.entry_buffer:
+                return self.midpx, -1
+            else:
+                return None, None
+        else:
+            return None, None
+
+    def fixed_thre_entry_strategy(self):
+        if self.buy_score > 0:
+            # if the score >= entry buffer, limit price is min of sp1 and
+            # the acceptable entry price (return at least isthe entry buffer)
+            self.entry_buffer = 1.56
+            if self.buy_score >= self.entry_buffer:
+                # the profit buffer is the difference between the expected return and the predicted return (excess returh)
+                profit_buffer = self.buy_score - self.entry_buffer
+                return min(self.sp1.
+                           float(Decimal(
+                    np.floor(self.midpx * (1 + profit_buffer / 1e4) / self.tick_size) * self.tick_size).quantize(
+                    Decimal('.0000'), rounding=ROUND_DOWN))), 1
+            else:
+                return None, None
+        elif self.sell_score < 0:
+            # if the score <= entry buffer, limit price is max ofbp1 and
+            # the acceptable entry price (return at least is the eentry buffer
+            self.entry_buffer = 1.8
+            if self.sell_score <= -self.entry_buffer:
+                # the profit buffer is the difference between the expeected return and the predicted return (excess returh)
+                profit_buffer = self.sell_score + self.entry_buffe
+                return max(self.bp1,
+                           float(Decimal(np.ceil(
+                               self.midpx * (1 + profit_buffer / 1e4) / self.tick_size) * self.tick_size).quantize(
+                               Decimal('.0000'), rounding=ROUND_UP))), -1
+            else:
+                return None, None
+        else:
+            return None, None
+
+    def percentile_entry_strategy(self):
+        if self.buy_score > 0:
+            # if the score >= entry buffer, limit price is min ofsp1 and
+            # the acceptable entry price (return at least is the entry buffer)
+            self.entry_buffer = self.params.percentile_df.loc[
+                self.params.long_entry_percentile, self.params.buy_score_column_name]
+            if self.buy_score >= self.entry_buffer:
+                # the profit buffer is the difference between the expected return anad the predicted return (excess return)
+                profit_buffer = self.buy_score - self.entry_buffer
+                return min(self.sp1,
+                           float(Decimal(np.floor(self.midpx * (1 + profit_buffer / 1e4) / self.tick_size)
+                                         * self.tick_size).quantize(Decimal('.0000'), rounding=ROUND_DOWN))), 1
+            else:
+                return None, None
+        elif self.sell_score < 0:
+            # if the score <= entry buffer, limit price is max ofbp1 and
+            # the acceptable entry price (return at least is the entry buffer)
+            self.entry_buffer = self.params.percentile_df.loc[
+                self.params.short_entry_percentile, self.params.sell_score_column_name]
+            if self.sell_score <= self.entry_buffer:
+                # the profit buffer is the difference between the expected return and the predicted return (excess returh)
+                profit_buffer = self.sell_score - self.entry_buffer
+                return max(self.bp1,
+                           float(Decimal(np.ceil(self.midpx * (1 + profit_buffer / 1e4) / self.tick_size)
+                                         * self.tick_size).quantize(Decimal('.0000'), rounding=ROUND_UP))), -1
+            else:
+                return None, None
+        else:
+            return None, None
