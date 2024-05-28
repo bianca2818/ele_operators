@@ -11,7 +11,6 @@ warnings.simplefilter('ignore')
 
 # sr need to sort by ['secID','timeTag']
 class EleOperators(object):
-    OPERATOR_LIST = ['max', 'min', 'std', 'mean', 'sum', 'corr']
     PLUS_NUM = 1e-8
 
     def corr(self, sr1: pl.Series, sr2: pl.Series, res_col: str, window_size=int, min_periods=None):
@@ -35,7 +34,7 @@ class EleOperators(object):
     def minus_min(self, sr: pl.Series, window_size, min_periods=None):
         if min_periods is None:
             min_periods = window_size
-        res = sr - sr.rolling_min(window_size=window_size, min_periods=min_periods
+        res = sr - sr.rolling_min(window_size=window_size, min_periods=min_periods)
         return res
 
     def minus_max(self, sr: pl.Series, window_size, min_periods=None):
@@ -123,7 +122,7 @@ class EleOperators(object):
         for i in range(0, len(arr1) - ws + 1):
             high_arr1 = np.where(arr1[i:i + ws] > high_split_thre_arr[ws + i], arr2[i:i + ws], 0).mean()
             low_arr1 = np.where(arr1[i:i + ws] < low_split_thre_arr[ws + i], arr2[i:i + ws], 0).mean()
-        org_list.append(high_arr1 - low_arr1)
+            org_list.append(high_arr1 - low_arr1)
         return org_list
 
 
@@ -178,5 +177,3 @@ class EleOperators(object):
             min_periods = window_size
         res = sr - sr.shift(1).rolling_mean(window_size=window_size, _min_periods=min_periods)
         return res
-
-
